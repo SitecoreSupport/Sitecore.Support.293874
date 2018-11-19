@@ -12,6 +12,7 @@
   using Sitecore.ExM.Framework.Diagnostics;
   using Sitecore.SecurityModel;
   using Sitecore.EmailCampaign.Cm.Pipelines.DispatchNewsletter;
+  using System.Collections.Generic;
 
   public class PublishDispatchItems
   {
@@ -47,9 +48,9 @@
         {
 
           var campaignTask = this.PublishCampaign(args.Message);
-          var messageTask = this.PublishMessage(args.Message);
+          var messageTasks = this.PublishMessage(args.Message);
 
-          var publishingTasks = new[] { campaignTask, messageTask };
+          var publishingTasks = messageTasks.Concat(new IPublishingTask[] { campaignTask });
 
           foreach (var publishingTask in publishingTasks.Where(publishingTask => publishingTask != null))
           {
@@ -64,17 +65,33 @@
       }
     }
 
-    protected virtual IPublishingTask PublishMessage([NotNull]MessageItem message)
+    protected virtual IList<IPublishingTask> PublishMessage([NotNull]MessageItem message)
     {
       Assert.ArgumentNotNull(message, "message");
+
+      List<IPublishingTask> publishingTasks = new List<IPublishingTask>();
 
       var publishingTask = new PublishingTask(message.InnerItem, this.logger)
       {
         PublishRelatedItems = true
       };
       publishingTask.PublishAsync();
+      publishingTasks.Add(publishingTask);
 
-      return publishingTask;
+      if (message.TargetLanguage.Name != "en")
+      {
+        var item = Database.GetDatabase("master").GetItem(message.InnerItem.ID, message.TargetLanguage);
+
+        var publishingTaskinOtherLanguage = new PublishingTask(item, this.logger)
+        {
+          PublishRelatedItems = true
+        };
+
+        publishingTaskinOtherLanguage.PublishAsync();
+        publishingTasks.Add(publishingTaskinOtherLanguage);
+      }
+
+      return publishingTasks;
     }
 
     protected virtual IPublishingTask PublishCampaign([NotNull]MessageItem message)
