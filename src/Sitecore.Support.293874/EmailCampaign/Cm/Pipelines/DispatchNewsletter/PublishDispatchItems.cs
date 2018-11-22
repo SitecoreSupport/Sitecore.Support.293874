@@ -71,24 +71,17 @@
 
       List<IPublishingTask> publishingTasks = new List<IPublishingTask>();
 
-      var publishingTask = new PublishingTask(message.InnerItem, this.logger)
+      foreach (var language in message.InnerItem.Languages)
       {
-        PublishRelatedItems = true
-      };
-      publishingTask.PublishAsync();
-      publishingTasks.Add(publishingTask);
+        var item = Database.GetDatabase("master").GetItem(message.InnerItem.ID, language);
 
-      if (message.TargetLanguage.Name != "en")
-      {
-        var item = Database.GetDatabase("master").GetItem(message.InnerItem.ID, message.TargetLanguage);
-
-        var publishingTaskinOtherLanguage = new PublishingTask(item, this.logger)
+        var publishingTask = new PublishingTask(item, this.logger)
         {
           PublishRelatedItems = true
         };
 
-        publishingTaskinOtherLanguage.PublishAsync();
-        publishingTasks.Add(publishingTaskinOtherLanguage);
+        publishingTask.PublishAsync();
+        publishingTasks.Add(publishingTask);
       }
 
       return publishingTasks;
