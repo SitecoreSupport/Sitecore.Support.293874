@@ -71,18 +71,14 @@
 
       List<IPublishingTask> publishingTasks = new List<IPublishingTask>();
 
-      foreach (var language in message.InnerItem.Languages)
+      var item = Database.GetDatabase("master").GetItem(message.InnerItem.ID, message.InnerItem.Languages.FirstOrDefault());
+      var publishingTask = new Sitecore.Support.Modules.EmailCampaign.Core.PublishingTask(item, message.InnerItem.Languages, this.logger)
       {
-        var item = Database.GetDatabase("master").GetItem(message.InnerItem.ID, language);
+        PublishRelatedItems = true
+      };
 
-        var publishingTask = new PublishingTask(item, this.logger)
-        {
-          PublishRelatedItems = true
-        };
-
-        publishingTask.PublishAsync();
-        publishingTasks.Add(publishingTask);
-      }
+      publishingTask.PublishAsync();
+      publishingTasks.Add(publishingTask);
 
       return publishingTasks;
     }

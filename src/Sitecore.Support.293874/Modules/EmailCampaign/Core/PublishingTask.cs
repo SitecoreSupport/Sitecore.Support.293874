@@ -12,6 +12,7 @@
     using SecurityModel;
     using Sitecore.Modules.EmailCampaign.Core;
     using Sitecore.Modules.EmailCampaign.Core.Extensions;
+    using Globalization;
 
     public class PublishingTask : IPublishingTask
     {
@@ -19,6 +20,7 @@
         private readonly ILogger _logger;
         private bool _published;
         private Handle _handle;
+        private Language[] _languages;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PublishingTask"/> class. 
@@ -33,6 +35,17 @@
             this._dataItem = item;
             this._logger = logger;
         }
+
+        public PublishingTask([NotNull]Item item, Language[] languages, [NotNull] ILogger logger)
+        {
+            Assert.ArgumentNotNull(item, "item");
+            Assert.ArgumentNotNull(logger, "logger");
+            Assert.IsNotNull(item, "item");
+            this._dataItem = item;
+            this._logger = logger;
+            this._languages = languages;
+        }
+
 
         /// <summary>
         /// Gets or sets a value indicating whether task should publish related items
@@ -59,7 +72,7 @@
             _handle = PublishManager.PublishItem(
               itemToPublish,
               targets,
-              new[] { itemToPublish.Language },
+              _languages,
               true /* deep */,
               true /* compareRevisions */,
               PublishRelatedItems /* publishRelatedItems */);
